@@ -8,7 +8,7 @@ from time import sleep
 from flask import jsonify
 
 
-class FilamentSensorsRevolutions(octoprint.plugin.StartupPlugin,
+class ComputerVision3dprinter(octoprint.plugin.StartupPlugin,
                                  octoprint.plugin.EventHandlerPlugin,
                                  octoprint.plugin.TemplatePlugin,
                                  octoprint.plugin.SettingsPlugin,
@@ -265,12 +265,12 @@ class FilamentSensorsRevolutions(octoprint.plugin.StartupPlugin,
     def get_update_information(self):
         return dict(
             filamentrevolutions=dict(
-                displayName="Filament Sensors Revolutions",
+                displayName="Computer Vision 3dprinter",
                 displayVersion=self._plugin_version,
 
                 # version check: github repository
                 type="github_release",
-                user="RomRider",
+                user="katihatefi",
                 repo="Octoprint-Filament-Revolutions",
                 current=self._plugin_version,
 
@@ -286,7 +286,7 @@ __plugin_version__ = "1.0.0"
 
 def __plugin_load__():
     global __plugin_implementation__
-    __plugin_implementation__ = FilamentSensorsRevolutions()
+    __plugin_implementation__ = ComputerVision3dprinter()
 
     global __plugin_hooks__
     __plugin_hooks__ = {
