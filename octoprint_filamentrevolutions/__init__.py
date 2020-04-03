@@ -8,7 +8,7 @@ from time import sleep
 from flask import jsonify
 
 
-class ComputerVision3dprinter(octoprint.plugin.StartupPlugin,
+class FilamentSensorsRevolutions(octoprint.plugin.StartupPlugin,
                                  octoprint.plugin.EventHandlerPlugin,
                                  octoprint.plugin.TemplatePlugin,
                                  octoprint.plugin.SettingsPlugin,
@@ -21,70 +21,66 @@ class ComputerVision3dprinter(octoprint.plugin.StartupPlugin,
             raise Exception("RPi.GPIO must be greater than 0.6")
         GPIO.setwarnings(False)        # Disable GPIO warnings
 
-    @octoprint.plugin.BlueprintPlugin.route("/underfilled", methods=["GET"])
-    def api_get_underfilled(self):
+    @octoprint.plugin.BlueprintPlugin.route("/filament", methods=["GET"])
+    def api_get_filament(self):
         status = "-1"
-        if self.underfill_sensor_enabled():
-            status = "0" if self.underfilled() else "1"
+        if self.runout_sensor_enabled():
+            status = "0" if self.no_filament() else "1"
         return jsonify(status=status)
 
-    @octoprint.plugin.BlueprintPlugin.route("/overfilled", methods=["GET"])
-    def api_get_overfilled(self):
+    @octoprint.plugin.BlueprintPlugin.route("/jammed", methods=["GET"])
+    def api_get_jammed(self):
         status = "-1"
-        if self.overfill_sensor_enabled():
-            status = "1" if self.overfilled() else "0"
+        if self.jam_sensor_enabled():
+            status = "1" if self.jammed() else "0"
         return jsonify(status=status)
 
     @property
-    def underfill_pin(self):
-        return int(self._settings.get(["underfill_pin"]))
+    def runout_pin(self):
+        return int(self._settings.get(["runout_pin"]))
 
     @property
-    def overfill_pin(self):
-        return int(self._settings.get(["overfill_pin"]))
+    def jam_pin(self):
+        return int(self._settings.get(["jam_pin"]))
 
     @property
-    def underfill_bounce(self):
-        return int(self._settings.get(["underfill_bounce"]))
+    def runout_bounce(self):
+        return int(self._settings.get(["runout_bounce"]))
 
     @property
-    def overfill_bounce(self):
-        return int(self._settings.get(["overfill_bounce"]))
+    def jam_bounce(self):
+        return int(self._settings.get(["jam_bounce"]))
 
     @property
-    def underfill_switch(self):
-        return int(self._settings.get(["underfill_switch"]))
+    def runout_switch(self):
+        return int(self._settings.get(["runout_switch"]))
 
     @property
-    def overfill_switch(self):
-        return int(self._settings.get(["overfill_switch"]))
+    def jam_switch(self):
+        return int(self._settings.get(["jam_switch"]))
 
     @property
     def mode(self):
         return int(self._settings.get(["mode"]))
 
     @property
-    def underfilled_gcode(self):
-        return str(self._settings.get(["underfilled_gcode"])).splitlines()
-			
-    @property
-    def overfilled_gcode(self):
-        return str(self._settings.get(["overfilled_gcode"])).splitlines()
-		
-    @property
-    def underfilled_pause_print(self):
-        return self._settings.get_boolean(["underfilled_pause_print"])
+    def no_filament_gcode(self):
+        return str(self._settings.get(["no_filament_gcode"])).splitlines()
 
     @property
-    def overfilled_pause_print(self):
-        return self._settings.get_boolean(["overfilled_pause_print"])
+    def runout_pause_print(self):
+        return self._settings.get_boolean(["runout_pause_print"])
+
+    @property
+    def jammed_pause_print(self):
+        return self._settings.get_boolean(["jammed_pause_print"])
 
     @property
     def send_gcode_only_once(self):
         return self._settings.get_boolean(["send_gcode_only_once"])
 
     def _setup_sensor(self):
-        if self.underfill_sensor_enabled() or self.overfill_sensor_enabled():
+        if self.runout_sensor_enabled() or self.jam_sensor_enabled():
             if self.mode == 0:
                 self._logger.info("Using Board Mode")
                 GPIO.setmode(GPIO.BOARD)
@@ -92,19 +88,19 @@ class ComputerVision3dprinter(octoprint.plugin.StartupPlugin,
                 self._logger.info("Using BCM Mode")
                 GPIO.setmode(GPIO.BCM)
 
-            if self.underfill_sensor_enabled():
+            if self.runout_sensor_enabled():
                 self._logger.info(
-                    "Filament Underfill Sensor active on GPIO Pin [%s]" % self.underfill_pin)
-                GPIO.setup(self.underfill_pin, GPIO.IN, pull_up_down=GPIO.PUD_UP)
+                    "Filament Runout Sensor active on GPIO Pin [%s]" % self.runout_pin)
+                GPIO.setup(self.runout_pin, GPIO.IN, pull_up_down=GPIO.PUD_UP)
             else:
-                self._logger.info("Underfill Sensor Pin not configured")
+                self._logger.info("Runout Sensor Pin not configured")
 
-            if self.overfill_sensor_enabled():
+            if self.jam_sensor_enabled():
                 self._logger.info(
-                    "Filament overfill Sensor active on GPIO Pin [%s]" % self.overfill_pin)
-                GPIO.setup(self.overfill_pin, GPIO.IN, pull_up_down=GPIO.PUD_UP)
+                    "Filament Jam Sensor active on GPIO Pin [%s]" % self.jam_pin)
+                GPIO.setup(self.jam_pin, GPIO.IN, pull_up_down=GPIO.PUD_UP)
             else:
-                self._logger.info("overfill Sensor Pin not configured")
+                self._logger.info("Jam Sensor Pin not configured")
 
         else:
             self._logger.info(
@@ -116,17 +112,17 @@ class ComputerVision3dprinter(octoprint.plugin.StartupPlugin,
 
     def get_settings_defaults(self):
         return dict(
-            underfill_pin=-1,   # Default is no pin
-            underfill_bounce=250,  # Debounce 250ms
-            underfill_switch=0,    # Normally Open
-            underfilled_gcode='',
-            underfilled_pause_print=True,
+            runout_pin=-1,   # Default is no pin
+            runout_bounce=250,  # Debounce 250ms
+            runout_switch=0,    # Normally Open
+            no_filament_gcode='',
+            runout_pause_print=True,
 
-            overfill_pin=-1,  # Default is no pin
-            overfill_bounce=250,  # Debounce 250ms
-            overfill_switch=0,  # Normally Closed
-            overfilled_gcode='',
-            overfilled_pause_print=True,
+            jam_pin=-1,  # Default is no pin
+            jam_bounce=250,  # Debounce 250ms
+            jam_switch=1,  # Normally Closed
+            jammed_gcode='',
+            jammed_pause_print=True,
 
             mode=0,    # Board Mode
             send_gcode_only_once=False,  # Default set to False for backward compatibility
@@ -136,20 +132,20 @@ class ComputerVision3dprinter(octoprint.plugin.StartupPlugin,
         octoprint.plugin.SettingsPlugin.on_settings_save(self, data)
         self._setup_sensor()
 
-    def underfill_sensor_triggered(self):
-        return self.underfill_triggered
+    def runout_sensor_triggered(self):
+        return self.runout_triggered
 
-    def underfill_sensor_enabled(self):
-        return self.underfill_pin != -1
+    def runout_sensor_enabled(self):
+        return self.runout_pin != -1
 
-    def overfill_sensor_enabled(self):
-        return self.overfill_pin != -1
+    def jam_sensor_enabled(self):
+        return self.jam_pin != -1
 
-    def underfilled(self):
-        return GPIO.input(self.underfill_pin) != self.underfill_switch
+    def no_filament(self):
+        return GPIO.input(self.runout_pin) != self.runout_switch
 
-    def overfilled(self):
-        return GPIO.input(self.overfill_pin) != self.overfill_switch
+    def jammed(self):
+        return GPIO.input(self.jam_pin) != self.jam_switch
 
     def get_template_configs(self):
         return [dict(type="settings", custom_bindings=False)]
@@ -158,11 +154,11 @@ class ComputerVision3dprinter(octoprint.plugin.StartupPlugin,
         # Early abort in case of out ot filament when start printing, as we
         # can't change with a cold nozzle
         if event is Events.PRINT_STARTED:
-            if self.underfill_sensor_enabled() and self.underfilled():
-                self._logger.info("Printing aborted: underfilled detected!")
+            if self.runout_sensor_enabled() and self.no_filament():
+                self._logger.info("Printing aborted: no filament detected!")
                 self._printer.cancel_print()
-            if self.overfill_sensor_enabled() and self.overfilled():
-                self._logger.info("Printing aborted: filament overfilled!")
+            if self.jam_sensor_enabled() and self.jammed():
+                self._logger.info("Printing aborted: filament jammed!")
                 self._printer.cancel_print()
 
         # Enable sensor
@@ -170,25 +166,25 @@ class ComputerVision3dprinter(octoprint.plugin.StartupPlugin,
             Events.PRINT_STARTED,
             Events.PRINT_RESUMED
         ):
-            if self.underfill_sensor_enabled():
+            if self.runout_sensor_enabled():
                 self._logger.info(
-                    "%s: Enabling filament underfill sensor." % (event))
-                self.underfill_triggered = 0  # reset triggered state
-                GPIO.remove_event_detect(self.underfill_pin)
+                    "%s: Enabling filament runout sensor." % (event))
+                self.runout_triggered = 0  # reset triggered state
+                GPIO.remove_event_detect(self.runout_pin)
                 GPIO.add_event_detect(
-                    self.underfill_pin, GPIO.BOTH,
-                    callback=self.underfill_sensor_callback,
-                    bouncetime=self.underfill_bounce
+                    self.runout_pin, GPIO.BOTH,
+                    callback=self.runout_sensor_callback,
+                    bouncetime=self.runout_bounce
                 )
-            if self.overfill_sensor_enabled():
+            if self.jam_sensor_enabled():
                 self._logger.info(
-                    "%s: Enabling filament overfill sensor." % (event))
-                self.overfill_triggered = 0  # reset triggered state
-                GPIO.remove_event_detect(self.overfill_pin)
+                    "%s: Enabling filament jam sensor." % (event))
+                self.jam_triggered = 0  # reset triggered state
+                GPIO.remove_event_detect(self.jam_pin)
                 GPIO.add_event_detect(
-                    self.overfill_pin, GPIO.BOTH,
-                    callback=self.overfill_sensor_callback,
-                    bouncetime=self.overfill_bounce
+                    self.jam_pin, GPIO.BOTH,
+                    callback=self.jam_sensor_callback,
+                    bouncetime=self.jam_bounce
                 )
 
         # Disable sensor
@@ -198,95 +194,95 @@ class ComputerVision3dprinter(octoprint.plugin.StartupPlugin,
             Events.PRINT_CANCELLED,
             Events.ERROR
         ):
-            self._logger.info("%s: Disabling underfilled sensors." % (event))
-            if self.underfill_sensor_enabled():
-                GPIO.remove_event_detect(self.underfill_pin)
-            if self.overfill_sensor_enabled():
-                GPIO.remove_event_detect(self.overfill_pin)
+            self._logger.info("%s: Disabling filament sensors." % (event))
+            if self.runout_sensor_enabled():
+                GPIO.remove_event_detect(self.runout_pin)
+            if self.jam_sensor_enabled():
+                GPIO.remove_event_detect(self.jam_pin)
 
-    def underfill_sensor_callback(self, _):
-        sleep(self.underfill_bounce/1000)
+    def runout_sensor_callback(self, _):
+        sleep(self.runout_bounce/1000)
 
         # If we have previously triggered a state change we are still out
         # of filament. Log it and wait on a print resume or a new print job.
-        if self.underfill_sensor_triggered():
+        if self.runout_sensor_triggered():
             self._logger.info("Sensor callback but no trigger state change.")
             return
 
-        if self.underfilled():
+        if self.no_filament():
             # Set the triggered flag to check next callback
-            self.underfill_triggered = 1
-            self._logger.info("Underfill filament!")
+            self.runout_triggered = 1
+            self._logger.info("Out of filament!")
             if self.send_gcode_only_once:
                 self._logger.info("Sending GCODE only once...")
             else:
                 # Need to resend GCODE (old default) so reset trigger
-                self.underfill_triggered = 0
-            if self.underfilled_pause_print:
+                self.runout_triggered = 0
+            if self.runout_pause_print:
                 self._logger.info("Pausing print.")
                 self._printer.pause_print()
-            if self.underfilled_gcode:
-                self._logger.info("Sending Underfilled GCODE")
-                self._printer.commands(self.underfilled_gcode)
+            if self.no_filament_gcode:
+                self._logger.info("Sending out of filament GCODE")
+                self._printer.commands(self.no_filament_gcode)
         else:
             self._logger.info("Filament detected!")
-            if not self.underfilled_pause_print:
-                self.underfill_triggered = 0
+            if not self.runout_pause_print:
+                self.runout_triggered = 0
 
-    def overfill_sensor_callback(self, _):
-        sleep(self.overfill_bounce/1000)
+    def jam_sensor_callback(self, _):
+        sleep(self.jam_bounce/1000)
 
         # If we have previously triggered a state change we are still out
         # of filament. Log it and wait on a print resume or a new print job.
-        if self.overfill_sensor_triggered():
+        if self.jam_sensor_triggered():
             self._logger.info("Sensor callback but no trigger state change.")
             return
 
-        if self.overfilled():
+        if self.jammed():
             # Set the triggered flag to check next callback
-            self.overfill_triggered = 1
-            self._logger.info("Filament overfilled!")
+            self.jam_triggered = 1
+            self._logger.info("Filament jammed!")
             if self.send_gcode_only_once:
                 self._logger.info("Sending GCODE only once...")
             else:
                 # Need to resend GCODE (old default) so reset trigger
-                self.overfill_triggered = 0
-            if self.overfilled_pause_print:
+                self.jam_triggered = 0
+            if self.jammed_pause_print:
                 self._logger.info("Pausing print.")
                 self._printer.pause_print()
-            if self.overfilled_gcode:
-                self._logger.info("Sending overfilled GCODE")
-                self._printer.commands(self.overfilled_gcode)
+            if self.jammed_gcode:
+                self._logger.info("Sending jammed GCODE")
+                self._printer.commands(self.jammed_gcode)
         else:
-            self._logger.info("Filament not overfilled!")
-            if not self.overfilled_pause_print:
-                self.overfill_triggered = 0
+            self._logger.info("Filament not jammed!")
+            if not self.jammed_pause_print:
+                self.jam_triggered = 0
 
     def get_update_information(self):
         return dict(
             filamentrevolutions=dict(
-                displayName="Computer Vision 3dprinter",
+                displayName="Filament Sensors Revolutions",
                 displayVersion=self._plugin_version,
 
                 # version check: github repository
                 type="github_release",
-                user="katihatefi",
+                user="RomRider",
                 repo="Octoprint-Filament-Revolutions",
                 current=self._plugin_version,
 
                 # update method: pip
-                #pip="https://github.com/RomRider/Octoprint-Filament-Revolutions/archive/{target_version}.zip"
+                pip="https://github.com/RomRider/Octoprint-Filament-Revolutions/archive/{target_version}.zip"
             )
         )
 
 
-__plugin_name__ = "Computer Vision 3dprinter"
+__plugin_name__ = "Filament Sensors Revolutions"
 __plugin_version__ = "1.0.0"
 
 
 def __plugin_load__():
     global __plugin_implementation__
-    __plugin_implementation__ = ComputerVision3dprinter()
+    __plugin_implementation__ = FilamentSensorsRevolutions()
 
     global __plugin_hooks__
     __plugin_hooks__ = {
@@ -301,5 +297,3 @@ def __plugin_check__():
         return False
 
     return True
-
-
