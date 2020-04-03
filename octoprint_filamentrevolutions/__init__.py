@@ -27,7 +27,7 @@ class FilamentSensorsRevolutions(octoprint.plugin.StartupPlugin,
         if self.runout_sensor_enabled():
             status = "0" if self.no_filament() else "1"
         return jsonify(status=status)
-			 @octoprint.plugin.BlueprintPlugin.route("/filamentone", methods=["GET"])
+   @octoprint.plugin.BlueprintPlugin.route("/filamentone", methods=["GET"])
     def api_get_filamentone(self):
         status = "-1"
         if self.runoutone_sensor_enabled():
@@ -44,8 +44,8 @@ class FilamentSensorsRevolutions(octoprint.plugin.StartupPlugin,
     @property
     def runout_pin(self):
         return int(self._settings.get(["runout_pin"]))
-			 @property
-    def runout_pin(self):
+   @property
+    def runoutone_pin(self):
         return int(self._settings.get(["runoutone_pin"]))
 
     @property
@@ -55,8 +55,8 @@ class FilamentSensorsRevolutions(octoprint.plugin.StartupPlugin,
     @property
     def runout_bounce(self):
         return int(self._settings.get(["runout_bounce"]))
-			  @property
-    def runout_bounce(self):
+   @property
+    def runoutone_bounce(self):
         return int(self._settings.get(["runoutone_bounce"]))
 
     @property
@@ -67,8 +67,8 @@ class FilamentSensorsRevolutions(octoprint.plugin.StartupPlugin,
     def runout_switch(self):
         return int(self._settings.get(["runout_switch"]))
 
-			@property
-    def runout_switch(self):
+    @property
+    def runoutone_switch(self):
         return int(self._settings.get(["runoutone_switch"]))
     @property
     def jam_switch(self):
@@ -81,7 +81,7 @@ class FilamentSensorsRevolutions(octoprint.plugin.StartupPlugin,
     @property
     def no_filament_gcode(self):
         return str(self._settings.get(["no_filament_gcode"])).splitlines()
-			@property
+    @property
     def no_filament_gcode(self):
         return str(self._settings.get(["no_filamentone_gcode"])).splitlines()
 
@@ -89,7 +89,7 @@ class FilamentSensorsRevolutions(octoprint.plugin.StartupPlugin,
     def runout_pause_print(self):
         return self._settings.get_boolean(["runout_pause_print"])
 			
-@property
+    @property
     def runoutone_pause_print(self):
         return self._settings.get_boolean(["runoutone_pause_print"])
     @property
@@ -116,7 +116,7 @@ class FilamentSensorsRevolutions(octoprint.plugin.StartupPlugin,
             else:
                 self._logger.info("Runout Sensor Pin not configured")
 								
-							if self.runoutone_sensor_enabled():
+	   if self.runoutone_sensor_enabled():
                 self._logger.info(
                     "Filament Runoutone Sensor active on GPIO Pin [%s]" % self.runoutone_pin)
                 GPIO.setup(self.runoutone_pin, GPIO.IN, pull_up_down=GPIO.PUD_UP)
@@ -145,8 +145,7 @@ class FilamentSensorsRevolutions(octoprint.plugin.StartupPlugin,
             runout_switch=0,    # Normally Open
             no_filament_gcode='',
             runout_pause_print=True,
-
-					  runoutone_pin=-1,   # Default is no pin
+            runoutone_pin=-1,   # Default is no pin
             runoutone_bounce=250,  # Debounce 250ms
             runoutone_switch=0,    # Normally Open
             no_filamentone_gcode='',
@@ -168,21 +167,21 @@ class FilamentSensorsRevolutions(octoprint.plugin.StartupPlugin,
     def runout_sensor_triggered(self):
         return self.runout_triggered
 			
-			def runoutone_sensor_triggered(self):
-        return self.runout_triggered
+     def runoutone_sensor_triggered(self):
+        return self.runoutone_triggered
 
     def runout_sensor_enabled(self):
         return self.runout_pin != -1
 			
- def runoutone_sensor_enabled(self):
-        return self.runout_pin != -1
+   def runoutone_sensor_enabled(self):
+        return self.runoutone_pin != -1
     def jam_sensor_enabled(self):
         return self.jam_pin != -1
 
     def no_filament(self):
         return GPIO.input(self.runout_pin) != self.runout_switch
 			
-			def no_filamentone(self):
+    def no_filamentone(self):
         return GPIO.input(self.runoutone_pin) != self.runoutone_switch
 
     def jammed(self):
@@ -198,10 +197,10 @@ class FilamentSensorsRevolutions(octoprint.plugin.StartupPlugin,
             if self.runout_sensor_enabled() and self.no_filament():
                 self._logger.info("Printing aborted: no filament detected!")
                 self._printer.cancel_print()
-						if self.runoutone_sensor_enabled() and self.no_filamentone():
+	if self.runoutone_sensor_enabled() and self.no_filamentone():
                self._logger.info("Printing aborted: no filamentone detected!")
                self._printer.cancel_print()
-            if self.jam_sensor_enabled() and self.jammed():
+       if self.jam_sensor_enabled() and self.jammed():
                 self._logger.info("Printing aborted: filament jammed!")
                 self._printer.cancel_print()
 
@@ -252,12 +251,16 @@ class FilamentSensorsRevolutions(octoprint.plugin.StartupPlugin,
             self._logger.info("%s: Disabling filament sensors." % (event))
             if self.runout_sensor_enabled():
                 GPIO.remove_event_detect(self.runout_pin)
+	   if self.runoutone_sensor_enabled():
+                GPIO.remove_event_detect(self.runoutone_pin)
             if self.jam_sensor_enabled():
                 GPIO.remove_event_detect(self.jam_pin)
 
     def runout_sensor_callback(self, _):
         sleep(self.runout_bounce/1000)
-
+	
+    def runoutone_sensor_callback(self, _):
+        sleep(self.runout_bounce/1000)
         # If we have previously triggered a state change we are still out
         # of filament. Log it and wait on a print resume or a new print job.
         if self.runout_sensor_triggered():
@@ -284,6 +287,12 @@ class FilamentSensorsRevolutions(octoprint.plugin.StartupPlugin,
             if not self.runout_pause_print:
                 self.runout_triggered = 0
 
+		if self.runout_sensor_triggered():
+            self._logger.info("Sensor callback but no trigger state change.")
+            return
+
+        
+		
     def jam_sensor_callback(self, _):
         sleep(self.jam_bounce/1000)
 
@@ -347,7 +356,8 @@ class FilamentSensorsRevolutions(octoprint.plugin.StartupPlugin,
             self._logger.info("Filamentone detected!")
             if not self.runoutone_pause_print:
                 self.runoutone_triggered = 0
-								
+	 def runoutone_sensor_callback(self, _):
+        sleep(self.runoutone_bounce/1000)				
 								
 
     def get_update_information(self):
