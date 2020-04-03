@@ -67,9 +67,9 @@ class FilamentSensorsRevolutions(octoprint.plugin.StartupPlugin,
     def no_filament_gcode(self):
         return str(self._settings.get(["no_filament_gcode"])).splitlines()
 			
-			@property
-    def overfill_gcode(self):
-        return str(self._settings.get(["overfill_gcode"])).splitlines()
+    @property
+    def overfilled_gcode(self):
+        return str(self._settings.get(["overfilled_gcode"])).splitlines()
 		
     @property
     def runout_pause_print(self):
