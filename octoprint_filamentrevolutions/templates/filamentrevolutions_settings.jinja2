@@ -85,14 +85,14 @@
     <div class="control-group">
         <div class="controls" data-toggle="tooltip" title="{{ _('With this option checked, the plugin will ignore subsequent reports of out of filament until the print is resumed again.') }}">
             <label class="checkbox">
-                <input type="checkbox" data-bind="checked: settings.plugins.filamentrevolutions.runout_gcode_send"> {{ _('Send GCODE only once when out of filament.') }}
+                <input type="checkbox" data-bind="checked: settings.plugins.filamentrevolutions.send_gcode_only_once"> {{ _('Send GCODE only once when out of filament.') }}
             </label>
         </div>
     </div>
     <div class="control-group">
         <div class="controls" data-toggle="tooltip" title="{{ _('With this option checked, the plugin will ignore subsequent reports of out of filament until the print is resumed again.') }}">
             <label class="checkbox">
-                <input type="checkbox" data-bind="checked: settings.plugins.filamentrevolutions.overfilled_gcode_send"> {{ _('Send GCODE only once when filament is overfilled.') }}
+                <input type="checkbox" data-bind="checked: settings.plugins.filamentrevolutions.send_gcode_only_once"> {{ _('Send GCODE only once when filament is overfilled.') }}
             </label>
         </div>
     </div>
