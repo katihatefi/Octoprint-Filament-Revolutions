@@ -94,7 +94,7 @@ class ComputerVision3dprinter(octoprint.plugin.StartupPlugin,
 
             if self.underfill_sensor_enabled():
                 self._logger.info(
-                    "Filament Underfill Sensor active on GPIO Pin [%s]" % self.runout_pin)
+                    "Filament Underfill Sensor active on GPIO Pin [%s]" % self.underfill_pin)
                 GPIO.setup(self.underfill_pin, GPIO.IN, pull_up_down=GPIO.PUD_UP)
             else:
                 self._logger.info("Underfill Sensor Pin not configured")
@@ -170,10 +170,10 @@ class ComputerVision3dprinter(octoprint.plugin.StartupPlugin,
             Events.PRINT_STARTED,
             Events.PRINT_RESUMED
         ):
-            if self.runout_sensor_enabled():
+            if self.underfill_sensor_enabled():
                 self._logger.info(
-                    "%s: Enabling filament runout sensor." % (event))
-                self.runout_triggered = 0  # reset triggered state
+                    "%s: Enabling filament underfill sensor." % (event))
+                self.underfill_triggered = 0  # reset triggered state
                 GPIO.remove_event_detect(self.underfill_pin)
                 GPIO.add_event_detect(
                     self.underfill_pin, GPIO.BOTH,
@@ -205,7 +205,7 @@ class ComputerVision3dprinter(octoprint.plugin.StartupPlugin,
                 GPIO.remove_event_detect(self.overfill_pin)
 
     def underfill_sensor_callback(self, _):
-        sleep(self.runout_bounce/1000)
+        sleep(self.underfill_bounce/1000)
 
         # If we have previously triggered a state change we are still out
         # of filament. Log it and wait on a print resume or a new print job.
