@@ -21,11 +21,11 @@ class ComputerVision3dprinter(octoprint.plugin.StartupPlugin,
             raise Exception("RPi.GPIO must be greater than 0.6")
         GPIO.setwarnings(False)        # Disable GPIO warnings
 
-    @octoprint.plugin.BlueprintPlugin.route("/filament", methods=["GET"])
-    def api_get_filament(self):
+    @octoprint.plugin.BlueprintPlugin.route("/underfilled", methods=["GET"])
+    def api_get_underfilled(self):
         status = "-1"
-        if self.runout_sensor_enabled():
-            status = "0" if self.no_filament() else "1"
+        if self.underfill_sensor_enabled():
+            status = "0" if self.no_underfilled() else "1"
         return jsonify(status=status)
 
     @octoprint.plugin.BlueprintPlugin.route("/overfilled", methods=["GET"])
@@ -36,24 +36,24 @@ class ComputerVision3dprinter(octoprint.plugin.StartupPlugin,
         return jsonify(status=status)
 
     @property
-    def runout_pin(self):
-        return int(self._settings.get(["runout_pin"]))
+    def underfill_pin(self):
+        return int(self._settings.get(["underfill_pin"]))
 
     @property
     def overfill_pin(self):
         return int(self._settings.get(["overfill_pin"]))
 
     @property
-    def runout_bounce(self):
-        return int(self._settings.get(["runout_bounce"]))
+    def underfill_bounce(self):
+        return int(self._settings.get(["underfill_bounce"]))
 
     @property
     def overfill_bounce(self):
         return int(self._settings.get(["overfill_bounce"]))
 
     @property
-    def runout_switch(self):
-        return int(self._settings.get(["runout_switch"]))
+    def underfill_switch(self):
+        return int(self._settings.get(["underfill_switch"]))
 
     @property
     def overfill_switch(self):
@@ -64,16 +64,16 @@ class ComputerVision3dprinter(octoprint.plugin.StartupPlugin,
         return int(self._settings.get(["mode"]))
 
     @property
-    def no_filament_gcode(self):
-        return str(self._settings.get(["no_filament_gcode"])).splitlines()
+    def underfilled_gcode(self):
+        return str(self._settings.get(["underfilled_gcode"])).splitlines()
 			
     @property
     def overfilled_gcode(self):
         return str(self._settings.get(["overfilled_gcode"])).splitlines()
 		
     @property
-    def runout_pause_print(self):
-        return self._settings.get_boolean(["runout_pause_print"])
+    def underfill_pause_print(self):
+        return self._settings.get_boolean(["underfill_pause_print"])
 
     @property
     def overfilled_pause_print(self):
@@ -84,7 +84,7 @@ class ComputerVision3dprinter(octoprint.plugin.StartupPlugin,
         return self._settings.get_boolean(["send_gcode_only_once"])
 
     def _setup_sensor(self):
-        if self.runout_sensor_enabled() or self.overfill_sensor_enabled():
+        if self.underfill_sensor_enabled() or self.overfill_sensor_enabled():
             if self.mode == 0:
                 self._logger.info("Using Board Mode")
                 GPIO.setmode(GPIO.BOARD)
@@ -92,10 +92,10 @@ class ComputerVision3dprinter(octoprint.plugin.StartupPlugin,
                 self._logger.info("Using BCM Mode")
                 GPIO.setmode(GPIO.BCM)
 
-            if self.runout_sensor_enabled():
+            if self.underfill_sensor_enabled():
                 self._logger.info(
                     "Filament Runout Sensor active on GPIO Pin [%s]" % self.runout_pin)
-                GPIO.setup(self.runout_pin, GPIO.IN, pull_up_down=GPIO.PUD_UP)
+                GPIO.setup(self.underfill_pin, GPIO.IN, pull_up_down=GPIO.PUD_UP)
             else:
                 self._logger.info("Runout Sensor Pin not configured")
 
@@ -116,11 +116,11 @@ class ComputerVision3dprinter(octoprint.plugin.StartupPlugin,
 
     def get_settings_defaults(self):
         return dict(
-            runout_pin=-1,   # Default is no pin
-            runout_bounce=250,  # Debounce 250ms
-            runout_switch=0,    # Normally Open
-            no_filament_gcode='',
-            runout_pause_print=True,
+            underfill_pin=-1,   # Default is no pin
+            underfill_bounce=250,  # Debounce 250ms
+            underfill_switch=0,    # Normally Open
+            underfilled_gcode='',
+            underfill_pause_print=True,
 
             overfill_pin=-1,  # Default is no pin
             overfill_bounce=250,  # Debounce 250ms
@@ -136,17 +136,17 @@ class ComputerVision3dprinter(octoprint.plugin.StartupPlugin,
         octoprint.plugin.SettingsPlugin.on_settings_save(self, data)
         self._setup_sensor()
 
-    def runout_sensor_triggered(self):
-        return self.runout_triggered
+    def underfill_sensor_triggered(self):
+        return self.underfill_triggered
 
-    def runout_sensor_enabled(self):
-        return self.runout_pin != -1
+    def underfill_sensor_enabled(self):
+        return self.underfill_pin != -1
 
     def overfill_sensor_enabled(self):
         return self.overfill_pin != -1
 
-    def no_filament(self):
-        return GPIO.input(self.runout_pin) != self.runout_switch
+    def underfilled(self):
+        return GPIO.input(self.underfill_pin) != self.underfill_switch
 
     def overfilled(self):
         return GPIO.input(self.overfill_pin) != self.overfill_switch
@@ -158,8 +158,8 @@ class ComputerVision3dprinter(octoprint.plugin.StartupPlugin,
         # Early abort in case of out ot filament when start printing, as we
         # can't change with a cold nozzle
         if event is Events.PRINT_STARTED:
-            if self.runout_sensor_enabled() and self.no_filament():
-                self._logger.info("Printing aborted: no filament detected!")
+            if self.underfill_sensor_enabled() and self.underfilled():
+                self._logger.info("Printing aborted: underfilled detected!")
                 self._printer.cancel_print()
             if self.overfill_sensor_enabled() and self.overfilled():
                 self._logger.info("Printing aborted: filament overfilled!")
@@ -174,11 +174,11 @@ class ComputerVision3dprinter(octoprint.plugin.StartupPlugin,
                 self._logger.info(
                     "%s: Enabling filament runout sensor." % (event))
                 self.runout_triggered = 0  # reset triggered state
-                GPIO.remove_event_detect(self.runout_pin)
+                GPIO.remove_event_detect(self.underfill_pin)
                 GPIO.add_event_detect(
-                    self.runout_pin, GPIO.BOTH,
-                    callback=self.runout_sensor_callback,
-                    bouncetime=self.runout_bounce
+                    self.underfill_pin, GPIO.BOTH,
+                    callback=self.underfill_sensor_callback,
+                    bouncetime=self.underfill_bounce
                 )
             if self.overfill_sensor_enabled():
                 self._logger.info(
@@ -198,40 +198,40 @@ class ComputerVision3dprinter(octoprint.plugin.StartupPlugin,
             Events.PRINT_CANCELLED,
             Events.ERROR
         ):
-            self._logger.info("%s: Disabling filament sensors." % (event))
-            if self.runout_sensor_enabled():
-                GPIO.remove_event_detect(self.runout_pin)
+            self._logger.info("%s: Disabling underfilled sensors." % (event))
+            if self.underfill_sensor_enabled():
+                GPIO.remove_event_detect(self.underfill_pin)
             if self.overfill_sensor_enabled():
                 GPIO.remove_event_detect(self.overfill_pin)
 
-    def runout_sensor_callback(self, _):
+    def underfill_sensor_callback(self, _):
         sleep(self.runout_bounce/1000)
 
         # If we have previously triggered a state change we are still out
         # of filament. Log it and wait on a print resume or a new print job.
-        if self.runout_sensor_triggered():
+        if self.underfill_sensor_triggered():
             self._logger.info("Sensor callback but no trigger state change.")
             return
 
-        if self.no_filament():
+        if self.underfilled():
             # Set the triggered flag to check next callback
-            self.runout_triggered = 1
-            self._logger.info("Out of filament!")
+            self.underfill_triggered = 1
+            self._logger.info("Underfill filament!")
             if self.send_gcode_only_once:
                 self._logger.info("Sending GCODE only once...")
             else:
                 # Need to resend GCODE (old default) so reset trigger
-                self.runout_triggered = 0
-            if self.runout_pause_print:
+                self.underfill_triggered = 0
+            if self.underfill_pause_print:
                 self._logger.info("Pausing print.")
                 self._printer.pause_print()
-            if self.no_filament_gcode:
-                self._logger.info("Sending out of filament GCODE")
-                self._printer.commands(self.no_filament_gcode)
+            if self.underfilled_gcode:
+                self._logger.info("Sending Underfilled GCODE")
+                self._printer.commands(self.underfilled_gcode)
         else:
             self._logger.info("Filament detected!")
-            if not self.runout_pause_print:
-                self.runout_triggered = 0
+            if not self.underfill_pause_print:
+                self.underfill_triggered = 0
 
     def overfill_sensor_callback(self, _):
         sleep(self.overfill_bounce/1000)
