@@ -72,7 +72,7 @@ class ComputerVision3dprinter(octoprint.plugin.StartupPlugin,
         return str(self._settings.get(["overfilled_gcode"])).splitlines()
 		
     @property
-    def underfill_pause_print(self):
+    def underfilled_pause_print(self):
         return self._settings.get_boolean(["underfilled_pause_print"])
 
     @property
