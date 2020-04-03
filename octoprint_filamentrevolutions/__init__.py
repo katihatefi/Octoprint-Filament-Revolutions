@@ -269,10 +269,10 @@ class FilamentSensorsRevolutions(octoprint.plugin.StartupPlugin,
                 displayVersion=self._plugin_version,
 
                 # version check: github repository
-                type="github_release",
-                user="RomRider",
-                repo="Octoprint-Filament-Revolutions",
-                current=self._plugin_version,
+                #type="github_release",
+                #user="RomRider",
+                #repo="Octoprint-Filament-Revolutions",
+                #current=self._plugin_version,
 
                 # update method: pip
                 #pip="https://github.com/RomRider/Octoprint-Filament-Revolutions/archive/{target_version}.zip"
