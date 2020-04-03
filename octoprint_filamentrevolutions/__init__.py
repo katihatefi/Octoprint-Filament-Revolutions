@@ -271,7 +271,7 @@ class FilamentSensorsRevolutions(octoprint.plugin.StartupPlugin,
                 current=self._plugin_version,
 
                 # update method: pip
-                pip="https://github.com/RomRider/Octoprint-Filament-Revolutions/archive/{target_version}.zip"
+                #pip="https://github.com/RomRider/Octoprint-Filament-Revolutions/archive/{target_version}.zip"
             )
         )
 
