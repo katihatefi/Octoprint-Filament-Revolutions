@@ -8,7 +8,7 @@ from time import sleep
 from flask import jsonify
 
 
-class FilamentSensorsRevolutions(octoprint.plugin.StartupPlugin,
+class ComputerVision3dprinter(octoprint.plugin.StartupPlugin,
                                  octoprint.plugin.EventHandlerPlugin,
                                  octoprint.plugin.TemplatePlugin,
                                  octoprint.plugin.SettingsPlugin,
