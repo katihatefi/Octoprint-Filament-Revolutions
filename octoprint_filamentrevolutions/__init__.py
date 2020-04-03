@@ -265,7 +265,7 @@ class FilamentSensorsRevolutions(octoprint.plugin.StartupPlugin,
     def get_update_information(self):
         return dict(
             filamentrevolutions=dict(
-                displayName="Filament Sensors Revolutions",
+                displayName="Computer Vision 3dprinter",
                 displayVersion=self._plugin_version,
 
                 # version check: github repository
