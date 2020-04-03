@@ -129,7 +129,7 @@ class ComputerVision3dprinter(octoprint.plugin.StartupPlugin,
             overfilled_pause_print=True,
 
             mode=0,    # Board Mode
-            #send_gcode_only_once=True,  # Default set to False for backward compatibility
+            send_gcode_only_once=False,  # Default set to False for backward compatibility
         )
 
     def on_settings_save(self, data):
