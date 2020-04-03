@@ -25,7 +25,7 @@ class ComputerVision3dprinter(octoprint.plugin.StartupPlugin,
     def api_get_underfilled(self):
         status = "-1"
         if self.underfill_sensor_enabled():
-            status = "0" if self.no_underfilled() else "1"
+            status = "0" if self.underfilled() else "1"
         return jsonify(status=status)
 
     @octoprint.plugin.BlueprintPlugin.route("/overfilled", methods=["GET"])
@@ -73,7 +73,7 @@ class ComputerVision3dprinter(octoprint.plugin.StartupPlugin,
 		
     @property
     def underfill_pause_print(self):
-        return self._settings.get_boolean(["underfill_pause_print"])
+        return self._settings.get_boolean(["underfilled_pause_print"])
 
     @property
     def overfilled_pause_print(self):
@@ -94,10 +94,10 @@ class ComputerVision3dprinter(octoprint.plugin.StartupPlugin,
 
             if self.underfill_sensor_enabled():
                 self._logger.info(
-                    "Filament Runout Sensor active on GPIO Pin [%s]" % self.runout_pin)
+                    "Filament Underfill Sensor active on GPIO Pin [%s]" % self.runout_pin)
                 GPIO.setup(self.underfill_pin, GPIO.IN, pull_up_down=GPIO.PUD_UP)
             else:
-                self._logger.info("Runout Sensor Pin not configured")
+                self._logger.info("Underfill Sensor Pin not configured")
 
             if self.overfill_sensor_enabled():
                 self._logger.info(
@@ -120,7 +120,7 @@ class ComputerVision3dprinter(octoprint.plugin.StartupPlugin,
             underfill_bounce=250,  # Debounce 250ms
             underfill_switch=0,    # Normally Open
             underfilled_gcode='',
-            underfill_pause_print=True,
+            underfilled_pause_print=True,
 
             overfill_pin=-1,  # Default is no pin
             overfill_bounce=250,  # Debounce 250ms
@@ -222,7 +222,7 @@ class ComputerVision3dprinter(octoprint.plugin.StartupPlugin,
             else:
                 # Need to resend GCODE (old default) so reset trigger
                 self.underfill_triggered = 0
-            if self.underfill_pause_print:
+            if self.underfilled_pause_print:
                 self._logger.info("Pausing print.")
                 self._printer.pause_print()
             if self.underfilled_gcode:
@@ -230,7 +230,7 @@ class ComputerVision3dprinter(octoprint.plugin.StartupPlugin,
                 self._printer.commands(self.underfilled_gcode)
         else:
             self._logger.info("Filament detected!")
-            if not self.underfill_pause_print:
+            if not self.underfilled_pause_print:
                 self.underfill_triggered = 0
 
     def overfill_sensor_callback(self, _):
