@@ -78,18 +78,10 @@ class FilamentSensorsRevolutions(octoprint.plugin.StartupPlugin,
     @property
     def overfilled_pause_print(self):
         return self._settings.get_boolean(["overfilled_pause_print"])
- @property
-    def runout_gcode_send(self):
-        return self._settings.get_boolean(["runout_gcode_send"])
 
     @property
-    def overfilled_gcode_send(self):
-        return self._settings.get_boolean(["overfilled_gcode_send"])
-
-
-    #@property
-    #def send_gcode_only_once(self):
-        #return self._settings.get_boolean(["send_gcode_only_once"])
+    def send_gcode_only_once(self):
+        return self._settings.get_boolean(["send_gcode_only_once"])
 
     def _setup_sensor(self):
         if self.runout_sensor_enabled() or self.overfill_sensor_enabled():
@@ -129,7 +121,6 @@ class FilamentSensorsRevolutions(octoprint.plugin.StartupPlugin,
             runout_switch=0,    # Normally Open
             no_filament_gcode='',
             runout_pause_print=True,
-	    runout_gcode_send=True,
 
             overfill_pin=-1,  # Default is no pin
             overfill_bounce=250,  # Debounce 250ms
@@ -138,7 +129,7 @@ class FilamentSensorsRevolutions(octoprint.plugin.StartupPlugin,
             overfilled_pause_print=True,
 
             mode=0,    # Board Mode
-            overfilled_gcode_send=True,  # Default set to False for backward compatibility
+            send_gcode_only_once=False,  # Default set to False for backward compatibility
         )
 
     def on_settings_save(self, data):
@@ -226,7 +217,7 @@ class FilamentSensorsRevolutions(octoprint.plugin.StartupPlugin,
             # Set the triggered flag to check next callback
             self.runout_triggered = 1
             self._logger.info("Out of filament!")
-            if self.runout_gcode_send:
+            if self.send_gcode_only_once:
                 self._logger.info("Sending GCODE only once...")
             else:
                 # Need to resend GCODE (old default) so reset trigger
@@ -242,20 +233,20 @@ class FilamentSensorsRevolutions(octoprint.plugin.StartupPlugin,
             if not self.runout_pause_print:
                 self.runout_triggered = 0
 
-  #def overfill_sensor_callback(self, _):
-        #sleep(self.overfill_bounce/1000)
+    def overfill_sensor_callback(self, _):
+        sleep(self.overfill_bounce/1000)
 
         # If we have previously triggered a state change we are still out
         # of filament. Log it and wait on a print resume or a new print job.
-      #if self.overfill_sensor_triggered():
-           # self._logger.info("Sensor callback but no trigger state change.")
-            #return
+        if self.overfill_sensor_triggered():
+            self._logger.info("Sensor callback but no trigger state change.")
+            return
 
         if self.overfilled():
             # Set the triggered flag to check next callback
             self.overfill_triggered = 1
             self._logger.info("Filament overfilled!")
-            if self.overfilled_gcode_send:
+            if self.send_gcode_only_once:
                 self._logger.info("Sending GCODE only once...")
             else:
                 # Need to resend GCODE (old default) so reset trigger
@@ -310,3 +301,5 @@ def __plugin_check__():
         return False
 
     return True
+
+
