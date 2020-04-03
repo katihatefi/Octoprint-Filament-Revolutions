@@ -78,6 +78,13 @@ class FilamentSensorsRevolutions(octoprint.plugin.StartupPlugin,
     @property
     def overfilled_pause_print(self):
         return self._settings.get_boolean(["overfilled_pause_print"])
+    @property
+    def runout_gcode_send(self):
+        return self._settings.get_boolean(["runout_gcode_send"])
+
+    @property
+    def overfilled_gcode_send(self):
+        return self._settings.get_boolean(["overfilled_gcode_send"])
 
     @property
     def send_gcode_only_once(self):
@@ -129,7 +136,7 @@ class FilamentSensorsRevolutions(octoprint.plugin.StartupPlugin,
             overfilled_pause_print=True,
 
             mode=0,    # Board Mode
-            send_gcode_only_once=True,  # Default set to False for backward compatibility
+            #send_gcode_only_once=True,  # Default set to False for backward compatibility
         )
 
     def on_settings_save(self, data):
