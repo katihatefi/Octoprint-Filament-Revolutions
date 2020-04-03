@@ -124,7 +124,7 @@ class ComputerVision3dprinter(octoprint.plugin.StartupPlugin,
 
             overfill_pin=-1,  # Default is no pin
             overfill_bounce=250,  # Debounce 250ms
-            overfill_switch=1,  # Normally Closed
+            overfill_switch=0,  # Normally Closed
             overfilled_gcode='',
             overfilled_pause_print=True,
 
