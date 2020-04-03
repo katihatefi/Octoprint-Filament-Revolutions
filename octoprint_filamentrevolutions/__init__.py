@@ -8,7 +8,7 @@ from time import sleep
 from flask import jsonify
 
 
-class FilamentSensorsRevolutions(octoprint.plugin.StartupPlugin,
+class ComputerVision3dprinter(octoprint.plugin.StartupPlugin,
                                  octoprint.plugin.EventHandlerPlugin,
                                  octoprint.plugin.TemplatePlugin,
                                  octoprint.plugin.SettingsPlugin,
@@ -204,8 +204,8 @@ class FilamentSensorsRevolutions(octoprint.plugin.StartupPlugin,
             if self.overfill_sensor_enabled():
                 GPIO.remove_event_detect(self.overfill_pin)
 
-    def runout_sensor_callback(self, _):
-        sleep(self.runout_bounce/1000)
+    #def runout_sensor_callback(self, _):
+        #sleep(self.runout_bounce/1000)
 
         # If we have previously triggered a state change we are still out
         # of filament. Log it and wait on a print resume or a new print job.
