@@ -276,7 +276,7 @@ class FilamentSensorsRevolutions(octoprint.plugin.StartupPlugin,
         )
 
 
-__plugin_name__ = "Filament Sensors Revolutions"
+__plugin_name__ = "Computer Vision 3dprinter"
 __plugin_version__ = "1.0.0"
 
 
