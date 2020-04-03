@@ -233,14 +233,14 @@ class FilamentSensorsRevolutions(octoprint.plugin.StartupPlugin,
             if not self.runout_pause_print:
                 self.runout_triggered = 0
 
-    def overfill_sensor_callback(self, _):
-        sleep(self.overfill_bounce/1000)
+  #def overfill_sensor_callback(self, _):
+        #sleep(self.overfill_bounce/1000)
 
         # If we have previously triggered a state change we are still out
         # of filament. Log it and wait on a print resume or a new print job.
-        if self.overfill_sensor_triggered():
-            self._logger.info("Sensor callback but no trigger state change.")
-            return
+      #if self.overfill_sensor_triggered():
+           # self._logger.info("Sensor callback but no trigger state change.")
+            #return
 
         if self.overfilled():
             # Set the triggered flag to check next callback
