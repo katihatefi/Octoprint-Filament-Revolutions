@@ -226,7 +226,7 @@ class FilamentSensorsRevolutions(octoprint.plugin.StartupPlugin,
             # Set the triggered flag to check next callback
             self.runout_triggered = 1
             self._logger.info("Out of filament!")
-            if self.send_gcode_only_once:
+            if self.runout_gcode_send:
                 self._logger.info("Sending GCODE only once...")
             else:
                 # Need to resend GCODE (old default) so reset trigger
@@ -255,7 +255,7 @@ class FilamentSensorsRevolutions(octoprint.plugin.StartupPlugin,
             # Set the triggered flag to check next callback
             self.overfill_triggered = 1
             self._logger.info("Filament overfilled!")
-            if self.send_gcode_only_once:
+            if self.overfilled_gcode_send:
                 self._logger.info("Sending GCODE only once...")
             else:
                 # Need to resend GCODE (old default) so reset trigger
